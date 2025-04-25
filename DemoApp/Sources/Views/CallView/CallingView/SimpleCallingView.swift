@@ -187,6 +187,15 @@ struct SimpleCallingView: View {
         try await call.updateAudioSessionPolicy(AppEnvironment.audioSessionPolicy.value)
     }
 
+    private func setProximityPolicies(for callId: String) throws {
+        let policies = AppEnvironment.proximityPolicies.map(\.value)
+        guard !policies.isEmpty else {
+            return
+        }
+        let call = streamVideo.call(callType: callType, callId: callId)
+        try policies.forEach { try call.addProximityPolicy($0) }
+    }
+
     private func parseURLIfRequired(_ text: String) {
         let adapter = DeeplinkAdapter()
         guard
@@ -223,6 +232,7 @@ struct SimpleCallingView: View {
         case .lobby:
             await setPreferredVideoCodec(for: text)
             try? await setAudioSessionPolicyOverride(for: text)
+            try? setProximityPolicies(for: text)
             viewModel.enterLobby(
                 callType: callType,
                 callId: text,
@@ -231,10 +241,12 @@ struct SimpleCallingView: View {
         case .join:
             await setPreferredVideoCodec(for: text)
             try? await setAudioSessionPolicyOverride(for: text)
+            try? setProximityPolicies(for: text)
             viewModel.joinCall(callType: callType, callId: text)
         case let .start(callId):
             await setPreferredVideoCodec(for: callId)
             try? await setAudioSessionPolicyOverride(for: callId)
+            try? setProximityPolicies(for: text)
             viewModel.startCall(
                 callType: callType,
                 callId: callId,
